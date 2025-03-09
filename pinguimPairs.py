@@ -91,23 +91,31 @@ class PenguinsPairs(Problem):
     def result(self, state, action):
         """Aplica uma ação ao estado e retorna o novo estado."""
         (x, y), direcao = action
+        # Ensure x and y are integers
+        x = int(x)
+        y = int(y)
+
         new_state = [list(row) for row in state]  # Create a mutable copy of the state
         nx, ny = x, y
-        
+
         if direcao == 'N':
-            while nx > 0 and new_state[nx - 1][ny] == '..':  # Check if the cell is free (gelo)
+            # Move up while the next cell is free (gelo) and we are within bounds
+            while nx > 0 and new_state[nx - 1][ny] == '..':
                 nx -= 1
         elif direcao == 'S':
-            while nx < len(state) - 1 and new_state[nx + 1][ny] == '..':  # Check for down movement
+            # Move down while the next cell is free (gelo) and we are within bounds
+            while nx < len(state) - 1 and new_state[nx + 1][ny] == '..':
                 nx += 1
         elif direcao == 'E':
-            while ny < len(state[0]) - 1 and new_state[nx][ny + 1] == '..':  # Check for right movement
+            # Move right while the next cell is free (gelo) and we are within bounds
+            while ny < len(state[0]) - 1 and new_state[nx][ny + 1] == '..':
                 ny += 1
         elif direcao == 'O':
-            while ny > 0 and new_state[nx][ny - 1] == '..':  # Check for left movement
+            # Move left while the next cell is free (gelo) and we are within bounds
+            while ny > 0 and new_state[nx][ny - 1] == '..':
                 ny -= 1
 
-        # Make sure to set the current position to "empty" and update the new position with the penguin
+        # After sliding, we should update the position of the penguin
         new_state[x][y] = ".."  # Mark the old position as free (gelo)
         new_state[nx][ny] = state[x][y]  # Move the penguin to the new position
         
