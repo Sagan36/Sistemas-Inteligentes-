@@ -127,20 +127,5 @@ class PenguinsPairs(Problem):
         return (state, cost, obj)
     
 
-# Criar uma instância do problema com a tua grid original
-penguin_test = PenguinsPairs(grid)
-
-# Definir coordenadas iniciais dos pinguins
-pinguins = coordenadas(grid)[1]  # Obtém as posições dos pinguins
-
-test_cases = [
-    (pinguins[1], "N"),  # Deve ser None (não pode subir)
-    (pinguins[1], "S"),  # Deve deslizar para baixo até parar
-    (pinguins[1], "E"),  # Deve deslizar para a direita até parar
-    (pinguins[1], "O"),  # Deve deslizar para a esquerda até parar
-]
-
-# Executar os testes
-for (x, y), direction in test_cases:
-    result = penguin_test.valid_move(penguin_test.initial, x, y, direction)
-    print(f"Pinguim em ({x},{y}) movendo-se para {direction}: {result}")
+p = PenguinsPairs()
+print(p.display(p.initial))
