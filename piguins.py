@@ -19,6 +19,7 @@ def coordenadas(ice_map):
     icebergs = []
     agua = []
     map = ice_map.strip().split("\n")
+
     for x in range(len(map)):
         y = 0
         for char in map[x].split():
@@ -43,56 +44,60 @@ class PenguinsPairs(Problem):
     
     def actions(self, state):
         """Retorna os movimentos possíveis para cada pinguim."""
+        
         movimentos = []
         tuplos = []
-
-        for item in self.data[1]: 
+        direcoes = ['N','S','E','O']
+        C_R = [linha.split() for linha in self.ice_map.strip().split("\n")]
+        for item in state: 
             if isinstance(item, tuple):
                 tuplos.append(item)
-
-        for (i, j), pinguim_id in tuplos:  
-            for direcao in sorted(['N', 'S', 'E', 'O']):
-                if self.valid_move(state, i, j, direcao):
-                    movimentos.append((pinguim_id, direcao))  
-        print(movimentos)
-        return movimentos
-
-
-    def valid_move(self, state, x, y, direcao):
-        """Verifica se um pinguim pode mover-se sem cair na água, parando apenas contra icebergs ou noutro pinguim."""
-        movimentos = {'N': (-1, 0), 'S': (1, 0), 'E': (0, 1), 'O': (0, -1)}
-        dx, dy = movimentos[direcao]
-        nx, ny = x + dx, y + dy  
-        # Converter state numa matriz
-        state_grid = [linha.split() for linha in self.ice_map.strip().split("\n")]
-        #print(state_grid)   
-        # verifica se a posicao mesmo ao lado do pinguim esta livre
-        if (nx,ny) in self.data[2] or (nx,ny) in self.data[3]:
-            return False  
-
-        # Desliza até encontrar um obstáculo ou cair na água
-        while 0 <= nx < len(state_grid) and 0 <= ny < len(state_grid[0]):
-            celula = state_grid[nx][ny]
-            if celula in ('##'):  
-                return True 
-            elif any(c.isdigit() for c in celula):  
-                return True  
-            elif celula == '()':  
-                return False 
-
-            nx += dx
-            ny += dy  
-
-        return False  
+        
+        for tuplo, id in tuplos:
+            for i in direcoes:
+                x = int(tuplo[0])
+                y =  int(tuplo[1])
+                if i == 'N':
+                    if (x-1,y) not in self.data[2] or (x-1,y) in self.data[3]:
+                        while x >= 0:
+                            x = x - 1
+                            if (x,y) in self.data[3]:
+                                break
+                        else:
+                            movimentos.append((id,i))
+                elif i == 'S':    
+                    if (x+1,y) not in self.data[2] or (x+1,y) in self.data[3]:
+                        while x <= len(C_R):
+                            x = x +1
+                            if (x,y) in self.data[3]:
+                                break
+                        else:
+                            movimentos.append((id,i))
+                elif i == 'E':
+                    if (x,y+1) not in self.data[2] or (x,y+1) in self.data[3]:
+                        while y <= len(C_R[0]):
+                            y = y + 1
+                            if (x,y) in self.data[3]:
+                                break
+                        else:
+                            movimentos.append((id,i))
+                elif i == 'O':                    
+                    if (x,y-1) not in self.data[2] or (x,y-1) in self.data[3]:
+                        while y >= 0:
+                            y = y - 1
+                            if (x,y) in self.data[3]:
+                                break
+                        else:
+                            movimentos.append((id,i))
+        s = sorted(movimentos)
+        return s
 
 
     def result(self, state, action = ""):
         """Aplica uma ação ao estado e retorna o novo estado."""
         new_state = [list(row) for row in state]
-        list_tuple = [tuple(row[0]) for row in state]
         #nao existe actions possiveis para os pinguins 
         
-        print(action)
         #coisas a implementart
         #- ver o que fazer qnd os pin guisn colidem
 
@@ -103,16 +108,11 @@ class PenguinsPairs(Problem):
         for lista in new_state:
             if id in lista:
                 (x,y) = lista[0]
-    
+
+
         nx = int(x)
         ny = int(y)
-
-
-        self.data[0].append((nx,ny))#este append e crucial para duas coisas 1-Deixa nos investigar a lista de lugares
-                                #livres passando a frente o local inicial do pinguim 2-Vai atualizar a lista de espacoes livres
-                                #para no futuro ser preciso uma outra acao
-
-
+        self.data[0].append((nx,ny))
         if direcao == "N":
             while (nx,ny) in self.data[0]:
                 nx = nx - 1
@@ -134,14 +134,6 @@ class PenguinsPairs(Problem):
             self.data[0].remove((nx,ny))
 
 
-        seen = set()
-        #bem bascimanente isto ve se existe pinguins com as mesmas cordenadas se sim apaga-os
-        for tuplo in list_tuple:
-            if tuplo in seen:
-                for lista in new_state:
-                    if tuple(lista[0]) == tuplo:
-                        new_state = [x for x in new_state if x != lista]
-            seen.add(tuplo)
         #Faz um novo state que vai ser returnado
         return_state = [] 
         for lista in new_state:
@@ -149,8 +141,8 @@ class PenguinsPairs(Problem):
                 return_state.append(((nx,ny), id))
             else:
                 return_state.append(((lista[0]),lista[1]))
-        print(return_state)
-        return return_state
+        s = sorted(return_state, key=lambda x: x[1])
+        return s
 
         
     def goal_test (self, state):
@@ -159,6 +151,15 @@ class PenguinsPairs(Problem):
         pinguins estarem na mesma coordenada.
         """
         list_state =  [list(row) for row in state]
+        list_tuple = [tuple(row[0]) for row in state]
+        seen = set()
+        #bem bascimanente isto ve se existe pinguins com as mesmas cordenadas se sim apaga-os
+        for tuplo in list_tuple:
+            if tuplo in seen:
+                for lista in list_state:
+                    if tuple(lista[0]) == tuplo:
+                        list_state = [x for x in list_state if x != lista]
+            seen.add(tuplo)       
         return len(list_state) == 0                
 
     def display (self, state):
@@ -218,25 +219,3 @@ class PenguinsPairs(Problem):
             if obj:
                 break
         return (state, cost, obj)
-
-
- 	
-
-line1 = "## ## ## ## ## ## ## ## ##\n"
-line2 = "## .. .. .. .. .. .. .. ##\n"
-line3 = "## .. .. .. 00 .. .. .. ##\n"
-line4 = "## .. .. .. .. .. .. .. ##\n"
-line5 = "## .. .. ## ## ## .. .. ##\n"
-line6 = "## .. .. ## .. .. .. .. ##\n"
-line7 = "## .. .. 01 .. .. .. .. ##\n"
-line8 = "## .. .. .. .. .. .. .. ##\n"
-line9 = "## ## ## ## ## ## ## ## ##\n"
-grid2 = line1 + line2 + line3 + line4 + line5 + line6 + line7 + line8 + line9
-
-p = PenguinsPairs(grid2)
-resultado = breadth_first_graph_search(p)
-if resultado:
-    print("Solução Larg-prim (grafo) com custo", str(resultado.path_cost)+":")
-    print(resultado.solution())
-else:
-    print("Sem solução!")
