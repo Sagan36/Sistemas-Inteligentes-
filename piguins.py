@@ -1,4 +1,6 @@
 from searchPlus import *
+from copy import deepcopy
+
 
 
 line1 = "## ## ## ## ## ## ## ## ##\n"
@@ -12,193 +14,106 @@ line8 = "## .. .. .. .. .. .. .. ##\n"
 line9 = "## ## ## ## ## ## ## ## ##\n"
 grid = line1 + line2 + line3 + line4 + line5 + line6 + line7 + line8 + line9
 
+cardeais = { 
+    "E": (0, 1),
+    "N": (-1, 0),
+    "O": (0, -1),
+    "S": (1, 0)
+}
 
-def coordenadas(ice_map):
-    livres = []
-    pinguins = []
-    icebergs = []
-    agua = []
-    map = ice_map.strip().split("\n")
 
-    for x in range(len(map)):
-        y = 0
-        for char in map[x].split():
-            y += 1 
-            if char.isdigit():
-                pinguins.append(((x,y-1),char))
-            elif char in "..":
-                livres.append((x,y-1))
-            elif char in "##":
-                icebergs.append((x,y-1))
-            else:
-                agua.append((x,y-1))
-    return [livres, pinguins, icebergs, agua]
 
 class PenguinsPairs(Problem):
 
     def __init__(self, ice_map=grid):
-        self.ice_map = ice_map
-        self.initial = coordenadas(self.ice_map)[1]
-        self.data = coordenadas(self.ice_map)
-        super().__init__(self.initial)
+        initial = {}
+        #matriz para criar o mapa
+        linhas = ice_map.strip().split('\n')
+        matriz = [linha.split() for linha in linhas]
+        for i in range(len(matriz)):
+            for j in range(len(matriz[i])):
+                if matriz[i][j].isdigit():
+                    initial[matriz[i][j]] = (i, j)
+                    matriz[i][j] = '..'
+        #os pinguins sao um dicionario onde o value e a loc e a key e o id
+        super().__init__(initial)
+        self.icemap =  matriz
+        
+    def actions (self, state):
+        acoes = []
+        sentidos = ['E','N','O','S']
+        for p in state.keys():
+            for sentido in sentidos:
+                px = state[p][0]
+                py = state[p][1]
+
+                px += cardeais[sentido][0]
+                py += cardeais[sentido][1]       
+                if self.icemap[px][py] != '##' and self.icemap[px][py] != '()': #se nas roedondezxas for iceberg ou agua
+                    while self.icemap[px][py] != '##': #enquanto nao for iceberg
+                        if self.icemap[px][py] == '()': #se for agua 
+                            break
+                        elif (px,py) in state.values():#aquele caso em que existe um pinguim ao pe mas atras desse pinguim ta agua
+                            acoes.append((p,sentido))
+                            break
+                        px += cardeais[sentido][0]
+                        py += cardeais[sentido][1]
+                    else:   
+                        acoes.append((p,sentido))
+        return sorted(acoes, key=lambda x: (x[0], x[1]))
     
-    def actions(self, state):
-        """Retorna os movimentos possíveis para cada pinguim."""
+    def result(self, state, action):
+        pid, sentido = action
+        px, py = state[pid]
+        dx, dy = cardeais[sentido]
         
-        movimentos = []
-        tuplos = []
-        direcoes = ['N','S','E','O']
-        C_R = [linha.split() for linha in self.ice_map.strip().split("\n")]
-        for item in state: 
-            if isinstance(item, tuple):
-                tuplos.append(item)
-        
-        for tuplo, id in tuplos:
-            for i in direcoes:
-                x = int(tuplo[0])
-                y =  int(tuplo[1])
-                if i == 'N':
-                    if (x-1,y) not in self.data[2] or (x-1,y) in self.data[3]:
-                        while x >= 0:
-                            x = x - 1
-                            if (x,y) in self.data[3]:
-                                break
-                        else:
-                            movimentos.append((id,i))
-                elif i == 'S':    
-                    if (x+1,y) not in self.data[2] or (x+1,y) in self.data[3]:
-                        while x <= len(C_R):
-                            x = x +1
-                            if (x,y) in self.data[3]:
-                                break
-                        else:
-                            movimentos.append((id,i))
-                elif i == 'E':
-                    if (x,y+1) not in self.data[2] or (x,y+1) in self.data[3]:
-                        while y <= len(C_R[0]):
-                            y = y + 1
-                            if (x,y) in self.data[3]:
-                                break
-                        else:
-                            movimentos.append((id,i))
-                elif i == 'O':                    
-                    if (x,y-1) not in self.data[2] or (x,y-1) in self.data[3]:
-                        while y >= 0:
-                            y = y - 1
-                            if (x,y) in self.data[3]:
-                                break
-                        else:
-                            movimentos.append((id,i))
-        s = sorted(movimentos)
-        return s
-
-
-    def result(self, state, action = ""):
-        """Aplica uma ação ao estado e retorna o novo estado."""
-        new_state = [list(row) for row in state]
-        #nao existe actions possiveis para os pinguins 
-        
-        #coisas a implementart
-        #- ver o que fazer qnd os pin guisn colidem
-
-        #extrai o action
-        id , direcao = action
-        
-        #vai buscar a posicao atual do pinguim que queremos mexer
-        for lista in new_state:
-            if id in lista:
-                (x,y) = lista[0]
-
-
-        nx = int(x)
-        ny = int(y)
-        self.data[0].append((nx,ny))
-        if direcao == "N":
-            while (nx,ny) in self.data[0]:
-                nx = nx - 1
-            nx =  nx + 1 #serve para que as cords do pinguim seja um elemento dos lugares livres pois com a condicao do while vamos sempre conseguir um elemento na lista dos icebergues 
-            self.data[0].remove((nx,ny))#retira o novo local do pinguim dos lugares livres
-        elif direcao == "O":
-            while (nx,ny) in self.data[0]:
-                ny = ny - 1
-            ny = ny + 1
-        elif direcao == "S":
-            while (nx,ny) in self.data[0]:
-                nx = nx + 1
-            nx = nx - 1
-            self.data[0].remove((nx,ny))
-        elif direcao == "E":
-            while(nx, ny) in self.data[0]:
-                ny = ny + 1
-            ny = ny - 1
-            self.data[0].remove((nx,ny))
-
-
-        #Faz um novo state que vai ser returnado
-        return_state = [] 
-        for lista in new_state:
-            if id in lista:
-                return_state.append(((nx,ny), id))
-            else:
-                return_state.append(((lista[0]),lista[1]))
-        s = sorted(return_state, key=lambda x: x[1])
-        return s
-
-        
-    def goal_test (self, state):
-        """
-        Vê se o state atual é o objetivo, que neste caso é os
-        pinguins estarem na mesma coordenada.
-        """
-        list_state =  [list(row) for row in state]
-        list_tuple = [tuple(row[0]) for row in state]
-        seen = set()
-        #bem bascimanente isto ve se existe pinguins com as mesmas cordenadas se sim apaga-os
-        for tuplo in list_tuple:
-            if tuplo in seen:
-                for lista in list_state:
-                    if tuple(lista[0]) == tuplo:
-                        list_state = [x for x in list_state if x != lista]
-            seen.add(tuplo)       
-        return len(list_state) == 0                
-
-    def display (self, state):
-        self.data[1] = state
-        dih = []
-        pinguins = {}
-
-        for lista in self.data:
-            for item in lista:
-                if isinstance(item, tuple):
-                    if len(item) == 2 and isinstance(item[0], tuple) and isinstance(item[1], str):# estes if e porque o ono
-                        dih.append(item[0]) 
-                        pinguins[item[0]] = item[1] #dicionario com os pinguins e seus ids
-                    elif len(item) == 2 and isinstance(item[0], int) and isinstance(item[1], int):
-                        dih.append(item) 
-        sortedGrid = sorted(dih)
-        grid = []
-        current_row = []
-
-        for i in sortedGrid:
-            if i in  self.data[0]:
-                printing = ".."
-            elif i in pinguins:
-                printing = pinguins[i]
-            elif i in  self.data[2]:
-                printing = "##"
-            elif i in  self.data[3]:
-                printing = "()"
-
-            current_row.append(printing)
-
-
-            if i[1] == sortedGrid[-1][1]:
-                grid.append(current_row) 
-                current_row = [] 
-
-        grid_str = "\n".join(" ".join(row) for row in grid)
-        return grid_str
+        # Criar novo estado sem modificar o original
+        novo_estado = deepcopy(state)
+        # Mover o pinguim até encontrar um obstáculo ou outro pinguim
+        while True:
+            px += dx
+            py += dy
             
+            # Verifica se saiu do limite do mapa
+            if px < 0 or px >= len(self.icemap) or py < 0 or py >= len(self.icemap[0]):
+                return novo_estado  # Retorna o estado original se sair do mapa
+            
+            if self.icemap[px][py] == "##" or self.icemap[px][py] == "()":
+                # Para antes do obstáculo
+                px -= dx
+                py -= dy
+                break
+            
+            for p, (p_x, p_y) in state.items():
+                if (px, py) == (p_x, p_y):
+                    # Caso encontre outro pinguim, remove ambos do estado
+                    novo_estado.pop(pid, None)
+                    novo_estado.pop(p, None)
+                    return novo_estado
+        
+        # Atualiza a posição do pinguim se ele conseguiu parar num local válido
+        novo_estado[pid] = (px, py)
+        return novo_estado
+
+    def display(self, state):
+        # Criar uma cópia do mapa original
+        mapa_visual = [linha[:] for linha in self.icemap]  # Garantir cópia correta
+        
+        # Colocar os pinguins no mapa
+        for pid, (x, y) in state.items():
+            mapa_visual[x][y] = pid
+        
+        # Criar uma string do mapa formatado
+        resultado = "\n".join(" ".join(linha) for linha in mapa_visual)
+        resultado += "\n"
+        return resultado
+
+    def goal_test(self, state):
+        # O objetivo é ter todos os pinguins emparelhados e removidos
+        return len(state) == 0
+
+
+
     def executa(self, state, actions_list, verbose=False):
         """Executa uma sequência de acções a partir do estado devolvendo o triplo formado pelo estado final, 
         pelo custo acumulado e pelo booleano que indica se o objectivo foi ou não atingido. Se o objectivo 
@@ -219,3 +134,5 @@ class PenguinsPairs(Problem):
             if obj:
                 break
         return (state, cost, obj)
+
+
