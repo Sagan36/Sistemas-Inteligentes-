@@ -72,13 +72,15 @@ class PenguinsPairs(Problem):
         if (x+dx,y+dy) in self.obstacles:
             return False
         while (x+dx,y+dy) not in self.obstacles and (x+dx,y+dy) not in state.pinguins.values():
+            print(x,y)
             if (x+dx,y+dy) in self.water:
+                print("2")
                 return False
             x = x+dx
             y = y+dy
         return True
     
-    
+    (3,2)(3,5)
     def actions (self, state):
         """
         Devolve uma lista ordenada com todas as ações possíveis para o estado.
@@ -175,9 +177,12 @@ class PenguinsPairs(Problem):
     
     
     def halfPenguins(self, node):
-        """Heurística que considera metade do número de pinguins."""
-        return len(node.state.pinguins) // 2
-
+        """
+        Heurística que considera metade do número de pinguins.
+        """
+        return len(node.state.pinguins)//2
+    
+    
     def Npairings(self, node):
         """Heurística que conta o número de pares diretos possíveis usando a função slide."""
         pinguins = sorted(node.state.pinguins.items())  
@@ -217,29 +222,12 @@ class PenguinsPairs(Problem):
                         visited.add((x1, y1))
                         visited.add((x2, y2))
                         break
+        print(visited)
         return np + (len(pinguins) - len(visited))  # Pares encontrados + pinguins restantes
     
-
-    def highestPairings(self, node):
-        """Heurística que escolhe os pinguins com maior possibilidade de emparelhamento."""
-        pinguins = sorted(node.state.pinguins.items(), key=lambda x: x[0])
-        emparelhamentos = {}
-        for pid, (x, y) in pinguins:
-            emparelhamentos[pid] = sum(1 for _, (xi, yi) in pinguins if (xi == x or yi == y) and (xi, yi) != (x, y))
-
-        sorted_pinguins = sorted(emparelhamentos.items(), key=lambda item: (-item[1], item[0]))
-        np = 0
-        nsp = len(sorted_pinguins)
-
-        while sorted_pinguins:
-            pid1, _ = sorted_pinguins.pop(0)
-            for i, (pid2, _) in enumerate(sorted_pinguins):
-                if node.state.pinguins[pid1][0] == node.state.pinguins[pid2][0] or \
-                    node.state.pinguins[pid1][1] == node.state.pinguins[pid2][1]:
-                    np += 1
-                    nsp -= 2
-                    del sorted_pinguins[i]
-                    break
-
-        return np + nsp
     
+    def highestPairings(self, node):
+        pass
+    
+p = PenguinsPairs()
+print(p.Npairings(Node(p.initial)))
