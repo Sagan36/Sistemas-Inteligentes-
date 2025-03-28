@@ -135,4 +135,3 @@ class PenguinsPairs(Problem):
                 break
         return (state, cost, obj)
 
-

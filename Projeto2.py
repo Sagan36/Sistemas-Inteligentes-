@@ -123,40 +123,45 @@ class PenguinsPairs(Problem):
 
     def Npairings(self, node):
         """Heurística que conta o número de pares diretos possíveis."""
-        pinguins = sorted(node.state.pinguins.values())  
-        np = 0  # Número de pares possíveis
-        nsp = len(pinguins)  # Número de pinguins sem par
-    
-        visited = set()
+        sorted_node = dict(sorted(node.state.pinguins.items(), key=lambda item: item[0]))
+        print(sorted_node)
+        p = list(sorted_node.values())
+        paired = set()
         
-        for i in range(len(pinguins)):
-            if pinguins[i] in visited:
+        for i in range(len(p)):
+            if p[i] in paired:
                 continue
-            x1, y1 = pinguins[i]
-    
-            for j in range(i + 1, len(pinguins)):
-                x2, y2 = pinguins[j]
-    
-                if (x2, y2) in visited:
+            x1, y1 = p[i]
+            for j in range(1 + i, len(p)):
+                if p[j] in paired:
                     continue
-    
+                x2, y2 = p[j]
                 if x1 == x2:  # Mesma linha
-                    if all((x1, y) not in self.obstacles and (x1, y) not in self.water
-                           for y in range(min(y1, y2) + 1, max(y1, y2))):
-                        np += 1
-                        visited.add((x1, y1))
-                        visited.add((x2, y2))
-                        break
-    
+                    if y1 > y2:
+                        if self.slide(node.state, x1, y1,'O'):
+                            paired.add((x1, y1))
+                            paired.add((x2, y2))
+                            break
+                    else:
+                        if self.slide(node.state, x1, y1,'E') :
+                            paired.add((x1, y1))
+                            paired.add((x2, y2))
+                            break
                 elif y1 == y2:  # Mesma coluna
-                    if all((x, y1) not in self.obstacles and (x, y1) not in self.water
-                           for x in range(min(x1, x2) + 1, max(x1, x2))):
-                        np += 1
-                        visited.add((x1, y1))
-                        visited.add((x2, y2))
-                        break
-    
-        return np + (len(pinguins) - len(visited))  # Pares encontrados + pinguins restantes
+                    if x1 > x2:
+                        if self.slide(node.state, x1, y1,'N'):
+                            paired.add((x1, y1))
+                            paired.add((x2, y2))
+                            break
+                    else:
+                        if self.slide(node.state,x1,y1,'S'):
+                            paired.add((x1, y1))
+                            paired.add((x2, y2))
+                            break
+        print(paired)
+        np = len(paired) // 2
+        nsp = len(p) - len( paired)               
+        return np + nsp
 
     def highestPairings(self, node):
         """Heurística que escolhe os pinguins com maior possibilidade de emparelhamento."""
@@ -180,3 +185,23 @@ class PenguinsPairs(Problem):
                     break
 
         return np + nsp
+
+line1 = "() () () () () () () () ()\n"
+line2 = "## .. .. 07 .. 01 .. .. ##\n"
+line3 = "## .. .. .. .. 05 .. .. ##\n"
+line4 = "## .. .. .. 09 .. .. .. ##\n"
+line5 = "## .. .. () () () 02 08 ##\n"
+line6 = "## .. .. .. .. 04 .. .. ##\n"
+line7 = "## .. 06 03 .. .. .. .. ##\n"
+line8 = "## .. 00 .. .. .. .. .. ##\n"
+line9 = "() () () () () () () () ()\n"
+grid3 = line1 + line2 + line3 + line4 + line5 + line6 + line7 + line8 + line9
+
+p = PenguinsPairs(grid3)
+res,expanded = greedy_best_first_graph_search_plus_count(p,p.Npairings)
+print(res.path_cost)
+if res:
+    print(res.solution())
+else:
+    print('No solution!')
+print('expanded:',expanded)

@@ -190,20 +190,32 @@ def tree_search(problem, frontier):
         frontier.extend(node.expand(problem))
     return None
 
+def tree_search_count(problem, frontier):
+    """Search through the successors of a problem to find a goal.
+    The argument frontier should be an empty queue.
+    Don't worry about repeated paths to a state. [Figure 3.7]"""
+    expandidos=0
+    frontier.append(Node(problem.initial))
+    while frontier:
+        node = frontier.pop()
+        if problem.goal_test(node.state):
+            return (node,expandidos)
+        expandidos+=1
+        frontier.extend(node.expand(problem))
+    return (None,expandidos)
+
 
 def graph_search(problem, frontier):
     """Search through the successors of a problem to find a goal.
     The argument frontier should be an empty queue.
     If two paths reach a state, only use the first one. [Figure 3.7]"""
     frontier.append(Node(problem.initial))
-    explored = list()
+    explored = set()
     while frontier:
         node = frontier.pop()
         if problem.goal_test(node.state):
             return node
-        zz = []
-        #explored.append(node.state)
-        explored = explored + [node.state]
+        explored.append(node.state)
         frontier.extend(child for child in node.expand(problem)
                         if child.state not in explored and
                         child not in frontier)
@@ -218,10 +230,10 @@ def graph_search_count(problem, frontier):
     explored = list()
     while frontier:
         node = frontier.pop()
+        print(node.state)  # temp
         expandidos+=1
         if problem.goal_test(node.state):
             return (node,expandidos)
-        zz = []
         #explored.append(node.state)
         explored = explored + [node.state]
         frontier.extend(child for child in node.expand(problem)
@@ -231,12 +243,20 @@ def graph_search_count(problem, frontier):
 
 def breadth_first_tree_search(problem):
     """Search the shallowest nodes in the search tree first."""
+    return graph_search(problem, FIFOQueue())
+
+def breadth_first_graph_search(problem):
+    """Search the shallowest nodes in the search tree first."""
     return tree_search(problem, FIFOQueue())
 
 
 def depth_first_tree_search(problem):
     """Search the deepest nodes in the search tree first."""
     return tree_search(problem, Stack())
+
+def depth_first_tree_search_count(problem):
+    """Search the deepest nodes in the search tree first."""
+    return tree_search_count(problem, Stack())
 
 
 def depth_first_graph_search(problem):
@@ -247,10 +267,8 @@ def depth_first_graph_search_count(problem):
     """Search the deepest nodes in the search tree first."""
     return graph_search_count(problem, Stack())
 
-def breadth_first_graph_search(problem):
-    """Search the shallowest nodes in the search tree first."""
-    return graph_search(problem, FIFOQueue())
-    
+# Largura em grafo em que se guardam os explorados num conjunto
+# Teste do objectivo nos sucessores excepto no estado inicial
 def breadth_first_search(problem):
     """[Figure 3.11]"""
     node = Node(problem.initial)
@@ -268,6 +286,164 @@ def breadth_first_search(problem):
                     return child
                 frontier.append(child)
     return None
+
+# Graph search with goal test on expansion
+# keep visited in a set
+# return only the solution
+#
+def graph_search_plus(problem, frontier,verbose=False):
+    """Search through the successors of a problem to find a goal.
+    The argument frontier should be an empty queue.
+    If two paths reach a state, only use the first one. [Figure 3.7]"""
+    frontier.append(Node(problem.initial))
+    visited = {problem.initial}
+    while frontier:
+        node = frontier.pop()
+        if verbose:
+            print('pop de_',node.state)
+        if problem.goal_test(node.state):
+            return node
+        for child in node.expand(problem):
+            if child.state not in visited:
+                visited.add(child.state)
+                frontier.append(child)
+    return None
+
+# Graph search with goal test on expansion
+# keep visited in a set
+# return number of visited besides the solution
+#
+def graph_search_plus_count(problem, frontier):
+    """Search through the successors of a problem to find a goal.
+    The argument frontier should be an empty queue.
+    If two paths reach a state, only use the first one. [Figure 3.7]"""
+    frontier.append(Node(problem.initial))
+    visited = {problem.initial}
+    while frontier:
+        node = frontier.pop()
+        if problem.goal_test(node.state):
+            return (node,len(explored))
+        for child in node.expand(problem):
+            if child.state not in visited:
+                visited.add(child.state)
+                frontier.append(child)
+    return (None,len(visited))
+
+
+def depth_first_graph_plus_search(problem,verbose=False):
+    """Search the deepest nodes in the search tree first."""
+    return graph_search_plus(problem, Stack(),verbose)
+
+def depth_first_graph_search_plus_count(problem):
+    """Search the deepest nodes in the search tree first."""
+    return graph_search_plus_count(problem, Stack())
+
+def breadth_first_graph_plus_search(problem):
+    """Search the deepest nodes in the search tree first."""
+    return graph_search_plus(problem,  FIFOQueue())
+
+def breadth_first_graph_search_plus_count(problem):
+    """Search the deepest nodes in the search tree first."""
+    return graph_search_plus_count(problem,  FIFOQueue())
+
+# Largura em grafo em que se guardam os visitados num conjunto
+# Teste do objectivo nos sucessores excepto no estado inicial
+def breadth_first_search_iia(problem):
+    """[Figure 3.11]"""
+    node = Node(problem.initial)
+    if problem.goal_test(node.state):
+        return node
+    frontier = FIFOQueue()
+    frontier.append(node)
+    visited = {problem.initial}
+    while frontier:
+        node = frontier.pop()
+        for child in node.expand(problem):
+            if child.state not in visited:
+                visited.add(child.state)
+                if problem.goal_test(child.state):
+                    return child
+                frontier.append(child)
+    return None
+
+
+# Largura em grafo em que se guardam os visitados num conjunto, devolve (sol,nº visitados)
+# Teste do objectivo nos sucessores excepto no estado inicial
+def breadth_first_search_iia_count(problem,verbose=False):
+    """[Figure 3.11]"""
+    node = Node(problem.initial)
+    if problem.goal_test(node.state):
+        return node, 1
+    frontier = FIFOQueue()
+    frontier.append(node)
+    visited = [problem.initial]
+    while frontier:
+        node = frontier.pop()
+        if verbose:
+            print(problem.display(node.state),"\n")
+        for child in node.expand(problem):
+            if child.state not in visited:
+                visited.append(child.state)
+                if problem.goal_test(child.state):
+                    return child, len(visited)
+                frontier.append(child)
+    return None, len(visited)
+
+def breadth_first_search_iia_counttt(problem):
+    """[Figure 3.11]"""
+    node = Node(problem.initial)
+    if problem.goal_test(node.state):
+        return node, 1
+    frontier = FIFOQueue()
+    frontier.append(node)
+    visited = {problem.initial}
+    while frontier:
+        node = frontier.pop()
+        for child in node.expand(problem):
+            if child.state not in visited:
+                visited.add(child.state)
+                if problem.goal_test(child.state):
+                    return child, len(visited)
+                frontier.append(child)
+    return None, len(visited)
+
+
+def breadth_first_search_exp(problem):
+    """[Figure 3.11]"""
+    node = Node(problem.initial)
+    if problem.goal_test(node.state):
+        return node, {node.state}
+    frontier = FIFOQueue()
+    frontier.append(node)
+    visited = {problem.initial}
+    while frontier:
+        node = frontier.pop()
+        for child in node.expand(problem):
+            if child.state not in visited:
+                visited.add(child.state)
+                if problem.goal_test(child.state):
+                    return child, visited
+                frontier.append(child)
+    return None, visited
+
+
+def breadth_first_search_count(problem):
+    """[Figure 3.11]"""
+    node = Node(problem.initial)
+    if problem.goal_test(node.state):
+        return 0,node
+    frontier = FIFOQueue()
+    frontier.append(node)
+    explored = set()
+    while frontier:
+        node = frontier.pop()
+        explored.add(node.state)
+        for child in node.expand(problem):
+            if child.state not in explored and child not in frontier:
+                if problem.goal_test(child.state):
+                    return len(explored),child
+                frontier.append(child)
+    return len(explored),None
 
 
 def best_first_graph_search(problem, f):
@@ -287,6 +463,7 @@ def best_first_graph_search(problem, f):
     explored = list()
     while frontier:
         node = frontier.pop()
+        print(len(explored),'----',node.state,'----',f(node))
         if problem.goal_test(node.state):
             return node
         explored.append(node.state)
@@ -333,6 +510,103 @@ def best_first_graph_search_count(problem, f):
                     frontier.append(child)
     return (None,len(explored))
 
+def best_first_graph_search_plus(problem, f):
+    """Search the nodes with the lowest f scores first.
+    You specify the function f(node) that you want to minimize; for example,
+    if f is a heuristic estimate to the goal, then we have greedy best
+    first search; if f is node.depth then we have breadth-first search.
+    There is a subtlety: the line "f = memoize(f, 'f')" means that the f
+    values will be cached on the nodes as they are computed. So after doing
+    a best first search you can examine the f values of the path returned."""
+    f = memoize(f, 'f')
+    node = Node(problem.initial)
+    if problem.goal_test(node.state):
+        return node
+    frontier = PriorityQueue(min, f)
+    frontier.append(node)
+    explored = set()
+    visited_not_explored={node.state}
+    while frontier:
+        node = frontier.pop()
+        if problem.goal_test(node.state):
+            return node
+        explored.add(node.state)
+        visited_not_explored.remove(node.state)
+        for child in node.expand(problem):
+            if child.state not in explored:
+                if child.state not in visited_not_explored:
+                    frontier.append(child)
+                    visited_not_explored.add(child.state)
+                else:
+                    incumbent = frontier[child]
+                    if f(child) < f(incumbent):
+                        del frontier[incumbent]
+                        frontier.append(child)
+                        # não precisamos de adicionar ao conjunto
+    return None
+
+def best_first_graph_search_plus_count(problem, f):
+    """Search the nodes with the lowest f scores first.
+    You specify the function f(node) that you want to minimize; for example,
+    if f is a heuristic estimate to the goal, then we have greedy best
+    first search; if f is node.depth then we have breadth-first search.
+    There is a subtlety: the line "f = memoize(f, 'f')" means that the f
+    values will be cached on the nodes as they are computed. So after doing
+    a best first search you can examine the f values of the path returned."""
+    f = memoize(f, 'f')
+    node = Node(problem.initial)
+    if problem.goal_test(node.state):
+        return node,0
+    frontier = PriorityQueue(min, f)
+    frontier.append(node)
+    explored = set()
+    visited_not_explored={node.state}
+    while frontier:
+        node = frontier.pop()
+        if problem.goal_test(node.state):
+            return node,len(explored)
+        explored.add(node.state)
+        visited_not_explored.remove(node.state)
+        for child in node.expand(problem):
+            if child.state not in explored:
+                if child.state not in visited_not_explored:
+                    frontier.append(child)
+                    visited_not_explored.add(child.state)
+                else:
+                    incumbent = frontier[child]
+                    if f(child) < f(incumbent):
+                        del frontier[incumbent]
+                        frontier.append(child)
+                        # não precisamos de adicionar ao conjunto
+    return None, len(explored)
+
+def uniform_cost_search_plus_count(problem):
+    """[Figure 3.14]"""
+    return best_first_graph_search_plus_count(problem, lambda node: node.path_cost)
+
+
+def uniform_cost_search_plus(problem):
+    """[Figure 3.14]"""
+    return best_first_graph_search_plus(problem, lambda node: node.path_cost)
+
+def uniform_cost_search_plus_count(problem):
+    """[Figure 3.14]"""
+    return best_first_graph_search_plus_count(problem, lambda node: node.path_cost)
+
+def astar_search_plus_count(problem, h=None):
+    """A* search is best-first graph search with f(n) = g(n)+h(n).
+    You need to specify the h function when you call astar_search, or
+    else in your Problem subclass."""
+    h = memoize(h or problem.h, 'h')
+    return best_first_graph_search_plus_count(problem, lambda n: n.path_cost + h(n))
+
+def astar_search_plus(problem, h=None):
+    """A* search is best-first graph search with f(n) = g(n)+h(n).
+    You need to specify the h function when you call astar_search, or
+    else in your Problem subclass."""
+    h = memoize(h or problem.h, 'h')
+    return best_first_graph_search_plus(problem, lambda n: n.path_cost + h(n))
+
 def uniform_cost_search(problem):
     """[Figure 3.14]"""
     return best_first_graph_search(problem, lambda node: node.path_cost)
@@ -342,6 +616,39 @@ def uniform_cost_search_count(problem):
     """[Figure 3.14]"""
     return best_first_graph_search_count(problem, lambda node: node.path_cost)
 
+
+# iterative graph version
+def graph_limited_search(problem, frontier,lim):
+    """Search through the successors of a problem to find a goal.
+    The argument frontier should be an empty queue.
+    """
+    frontier.append(Node(problem.initial))
+    explored = set()
+    while frontier:
+        node = frontier.pop()
+        if problem.goal_test(node.state):
+            return node
+        explored.add(node.state)
+        if node.depth < lim:
+            frontier.extend(child for child in node.expand(problem)
+                        if child.state not in explored and
+                        child not in frontier)
+    return 'cutoff'
+
+def depth_limited_graph_search(problem, depth):
+    """ invoque tree_limited_search whereas frontier will be a stack"""
+    return graph_limited_search(problem,Stack(),depth)
+
+def iterative_deepening_graph_search(problem):
+    """[Figure 3.18]"""
+    for depth in range(sys.maxsize):
+        result = depth_limited_graph_search(problem, depth)
+        if result != 'cutoff':
+            return result
+        
+
+
+### Recursive version
 def depth_limited_search(problem, limit=50):
     """[Figure 3.17]"""
     def recursive_dls(node, problem, limit):
@@ -456,6 +763,10 @@ def bidirectional_search(problem):
 greedy_best_first_graph_search = best_first_graph_search
 # Greedy best-first search is accomplished by specifying f(n) = h(n).
 
+greedy_best_first_graph_search_plus = best_first_graph_search_plus
+# Greedy best-first search is accomplished by specifying f(n) = h(n).
+
+greedy_best_first_graph_search_plus_count = best_first_graph_search_plus_count
 
 def astar_search(problem, h=None):
     """A* search is best-first graph search with f(n) = g(n)+h(n).
