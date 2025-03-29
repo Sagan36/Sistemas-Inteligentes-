@@ -179,7 +179,7 @@ class PenguinsPairs(Problem):
         return len(node.state.pinguins) // 2
 
     def Npairings(self, node):
-        """Heurística que conta o número de pares diretos possíveis usando a função slide."""
+        """Heurística que conta o número de pares diretos possíveis, verificando se não há obstáculos (paredes, água ou outros pinguins) entre eles."""
         pinguins = sorted(node.state.pinguins.items())  
         np = 0  # Número de pares possíveis
         visited = set()
@@ -187,59 +187,120 @@ class PenguinsPairs(Problem):
         for i in range(len(pinguins)):
             if pinguins[i][1] in visited:
                 continue
-            pid1, (x1, y1) = pinguins[i]
-    
+            inutil, (x1, y1) = pinguins[i]
             for j in range(i + 1, len(pinguins)):
-                pid2, (x2, y2) = pinguins[j]
-    
+                inutil, (x2, y2) = pinguins[j]
                 if (x2, y2) in visited:
                     continue
+                #linha
                 if x1 == x2:
-                    if y1<y2 and self.slide(node.state, x1, y1, "E"):  # Mesma linha, tenta deslizar para Leste
+                    if y1 < y2:
+                        dih = 1
+                    else:
+                        dih = -1
+                    clear_path = True
+                    for y in range(y1 + dih, y2, dih):
+                        if (x1, y) in self.obstacles or (x1, y) in self.water or (x1, y) in node.state.pinguins.values():
+                            clear_path = False
+                            break
+                    if clear_path:
                         np += 1
                         visited.add((x1, y1))
                         visited.add((x2, y2))
                         break
-        
-                    elif y1 > y2 and self.slide(node.state, x1, y1, "O"):  # Mesma linha, tenta deslizar para Oeste
+                #coluina
+                elif y1 == y2:
+                    if x1 < x2:
+                        div = 1
+                    else:
+                        div = -1
+                    clear_path = True
+                    for x in range(x1 + div, x2, div):
+                        if (x, y1) in self.obstacles or (x, y1) in self.water or (x, y1) in node.state.pinguins.values():
+                            clear_path = False
+                            break
+                    if clear_path:
                         np += 1
                         visited.add((x1, y1))
                         visited.add((x2, y2))
                         break
-                if y1 == y2:
-                    if x1 < x2 and self.slide(node.state, x1, y1, "S"):  # Mesma coluna, tenta deslizar para Norte
-                        np += 1
-                        visited.add((x1, y1))
-                        visited.add((x2, y2))
-                        break
-                    elif x1 > x2 and self.slide(node.state, x1, y1, "N"):  # Mesma coluna, tenta deslizar para Sul
-                        np += 1
-                        visited.add((x1, y1))
-                        visited.add((x2, y2))
-                        break
-        return np + (len(pinguins) - len(visited))  # Pares encontrados + pinguins restantes
+                        
+        return np + (len(pinguins) - len(visited))
     
-
     def highestPairings(self, node):
-        """Heurística que escolhe os pinguins com maior possibilidade de emparelhamento."""
-        pinguins = sorted(node.state.pinguins.items(), key=lambda x: x[0])
+        """Heurística que escolhe os pinguins com maior possibilidade de emparelhamento, verificando caminho livre."""
+        pinguins = sorted(node.state.pinguins.items(), key=lambda x: x[0]) 
         emparelhamentos = {}
         for pid, (x, y) in pinguins:
-            emparelhamentos[pid] = sum(1 for _, (xi, yi) in pinguins if (xi == x or yi == y) and (xi, yi) != (x, y))
-
+            count = 0
+            for other_pid, (ox, oy) in pinguins:
+                if ox == x and oy != y:  #linha
+                    if y < oy:
+                        dih = 1
+                    else:
+                        dih = -1
+                    clear = True
+                    for y_pos in range(y + dih, oy, dih):
+                        if (x, y_pos) in self.obstacles or (x, y_pos) in self.water or (x, y_pos) in node.state.pinguins.values():
+                            clear = False
+                            break
+                    if clear:
+                        count += 1
+            for other_pid, (ox, oy) in pinguins:
+                if oy == y and ox != x:  #clounua
+                    if x < ox:
+                        dih = 1
+                    else:
+                        dih = -1
+                    clear = True
+                    for x_pos in range(x + dih, ox, dih):
+                        if (x_pos, y) in self.obstacles or (x_pos, y) in self.water or (x_pos, y) in node.state.pinguins.values():
+                            clear = False
+                            break
+                    if clear:
+                        count += 1
+            emparelhamentos[pid] = count
+        #basicamente o npairings so que com os pinguins e os seus emparalhemtnos feitos em cima
         sorted_pinguins = sorted(emparelhamentos.items(), key=lambda item: (-item[1], item[0]))
-        np = 0
-        nsp = len(sorted_pinguins)
-
-        while sorted_pinguins:
-            pid1, _ = sorted_pinguins.pop(0)
-            for i, (pid2, _) in enumerate(sorted_pinguins):
-                if node.state.pinguins[pid1][0] == node.state.pinguins[pid2][0] or \
-                    node.state.pinguins[pid1][1] == node.state.pinguins[pid2][1]:
-                    np += 1
-                    nsp -= 2
-                    del sorted_pinguins[i]
-                    break
-
+        np = 0 
+        visited = set()
+        for pid1, _ in sorted_pinguins:
+            if pid1 in visited:
+                continue
+            x1, y1 = node.state.pinguins[pid1]
+            for pid2, _ in sorted_pinguins:
+                if pid2 == pid1 or pid2 in visited:
+                    continue
+                x2, y2 = node.state.pinguins[pid2]
+                if x1 == x2:  #linha
+                    if y < y2:
+                        vih = 1
+                    else:
+                        vih = -1                    
+                    clear_path = True
+                    for y in range(y1 + vih, y2, vih):
+                        if (x1, y) in self.obstacles or (x1, y) in self.water or (x1, y) in node.state.pinguins.values():
+                            clear_path = False
+                            break
+                    if clear_path:
+                        np += 1
+                        visited.add(pid1)
+                        visited.add(pid2)
+                        break
+                elif y1 == y2: #coluna
+                    if x1 < x2:
+                        vih = 1
+                    else:
+                        vih = -1 
+                    clear_path = True
+                    for x in range(x1 + vih, x2,  vih):
+                        if (x, y1) in self.obstacles or (x, y1) in self.water or (x, y1) in node.state.pinguins.values():
+                            clear_path = False
+                            break
+                    if clear_path:
+                        np += 1
+                        visited.add(pid1)
+                        visited.add(pid2)
+                        break
+        nsp = len(node.state.pinguins) - len(visited)
         return np + nsp
-    
